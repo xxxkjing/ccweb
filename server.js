@@ -42,13 +42,13 @@ app.register(async function (fastify) {
     const token = req.query.token;
 
     if (token !== PASSWORD) {
-      connection.socket.close(1008, 'Invalid password');
+      connection.close(1008, 'Invalid password');
       return;
     }
 
     if (activeConnection) {
-      connection.socket.send('Another user is already connected.\r\n');
-      connection.socket.close(1008, 'Max connections reached');
+      connection.send('Another user is already connected.\r\n');
+      connection.close(1008, 'Max connections reached');
       return;
     }
 
@@ -67,10 +67,10 @@ app.register(async function (fastify) {
     });
 
     ptyProcess.onData(data => {
-      connection.socket.send(data);
+      connection.send(data);
     });
 
-    connection.socket.on('message', message => {
+    connection.on('message', message => {
       try {
         const msg = JSON.parse(message.toString());
         if (msg.type === 'resize') {
@@ -84,7 +84,7 @@ app.register(async function (fastify) {
       }
     });
 
-    connection.socket.on('close', () => {
+    connection.on('close', () => {
       activeConnection = null;
       ptyProcess.kill();
       syncWorkspace();
