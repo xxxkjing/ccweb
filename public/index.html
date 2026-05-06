@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Claude Code Terminal</title>
+  <link rel="stylesheet" href="/vendor/xterm.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      overflow: hidden;
+    }
+    #terminal-container {
+      width: 100%;
+      height: 100%;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      z-index: 10;
+    }
+    #password-input {
+      margin-top: 10px;
+      padding: 5px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <div>Enter Terminal Password:</div>
+    <input type="password" id="password-input" autofocus />
+  </div>
+  <div id="terminal-container"></div>
+  <script src="/vendor/xterm.js"></script>
+  <script src="/vendor/xterm-addon-fit.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
