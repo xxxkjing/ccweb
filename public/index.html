@@ -4,14 +4,23 @@
   <meta charset="UTF-8">
   <title>Claude Code Terminal</title>
   <link rel="stylesheet" href="/vendor/xterm.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <style>
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #000;
+      background-color: #1e1e1e;
       overflow: hidden;
+    }
+    #terminal-wrapper {
+      padding: 10px;
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
     }
     #terminal-container {
       width: 100%;
@@ -44,9 +53,12 @@
     <div>Enter Terminal Password:</div>
     <input type="password" id="password-input" autofocus />
   </div>
-  <div id="terminal-container"></div>
+  <div id="terminal-wrapper">
+    <div id="terminal-container"></div>
+  </div>
   <script src="/vendor/xterm.js"></script>
   <script src="/vendor/xterm-addon-fit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl@0.16.0/lib/xterm-addon-webgl.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
