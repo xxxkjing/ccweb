@@ -71,16 +71,28 @@ app.register(async function (fastify) {
     });
 
     connection.on('message', message => {
-      try {
-        const msg = JSON.parse(message.toString());
-        if (msg.type === 'resize') {
+      const msgStr = message.toString();
+      if (msgStr.startsWith('0')) {
+        ptyProcess.write(msgStr.slice(1));
+      } else if (msgStr.startsWith('1')) {
+        try {
+          const msg = JSON.parse(msgStr.slice(1));
           ptyProcess.resize(msg.cols, msg.rows);
-        } else if (msg.type === 'data') {
-          ptyProcess.write(msg.data);
+        } catch (e) {
+          console.error('Failed to parse resize message', e);
         }
-      } catch (e) {
-        // Fallback for raw data if needed
-        ptyProcess.write(message.toString());
+      } else {
+        try {
+          const msg = JSON.parse(msgStr);
+          if (msg.type === 'resize') {
+            ptyProcess.resize(msg.cols, msg.rows);
+          } else if (msg.type === 'data') {
+            ptyProcess.write(msg.data);
+          }
+        } catch (e) {
+          // Fallback for raw data if needed
+          ptyProcess.write(msgStr);
+        }
       }
     });
 
