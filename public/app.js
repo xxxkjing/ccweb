@@ -1,19 +1,9 @@
-const overlay = document.getElementById('overlay');
-const passwordInput = document.getElementById('password-input');
 const terminalContainer = document.getElementById('terminal-container');
 
-passwordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const password = passwordInput.value;
-    overlay.style.display = 'none';
-    initTerminal(password);
-  }
-});
-
-function initTerminal(password) {
+function initTerminal() {
   const term = new Terminal({
     cursorBlink: true,
-    fontFamily: '"Fira Code", "JetBrains Mono", Consolas, "Courier New", monospace',
+    fontFamily: '"Source Code Pro", "Fira Code", "JetBrains Mono", Consolas, "Courier New", monospace',
     fontSize: 14,
     theme: {
       background: '#1e1e1e',
@@ -52,7 +42,7 @@ function initTerminal(password) {
   }
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/terminal?token=${encodeURIComponent(password)}`;
+  const wsUrl = `${protocol}//${location.host}/terminal`;
   
   const ws = new WebSocket(wsUrl);
 
@@ -69,17 +59,54 @@ function initTerminal(password) {
   };
 
   ws.onerror = () => {
-    term.write('\r\n\r\nConnection error. Incorrect password?');
-    setTimeout(() => {
-      overlay.style.display = 'flex';
-      passwordInput.value = '';
-      passwordInput.focus();
-    }, 2000);
+    term.write('\r\n\r\nConnection error.');
   };
 
   term.onData(data => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send('0' + data);
+    }
+  });
+
+  term.onTitleChange(title => {
+    if (title.startsWith('__UPLOAD__:')) {
+      const parts = title.split(':');
+      const randomSuffix = parts.pop();
+      const prefix = parts.shift();
+      const uploadPath = parts.join(':');
+
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.multiple = true;
+      fileInput.style.display = 'none';
+
+      fileInput.addEventListener('change', async () => {
+        if (!fileInput.files || fileInput.files.length === 0) return;
+        const formData = new FormData();
+        for (const file of fileInput.files) {
+          formData.append('files', file);
+        }
+
+        try {
+          term.write(`\r\nUploading ${fileInput.files.length} file(s) to ${uploadPath}...\r\n`);
+          const res = await fetch(`/upload?cwd=${encodeURIComponent(uploadPath)}`, {
+            method: 'POST',
+            body: formData
+          });
+          if (res.ok) {
+            term.write('Upload complete.\r\n');
+          } else {
+            term.write(`Upload failed: ${res.statusText}\r\n`);
+          }
+        } catch (e) {
+          term.write(`Upload error: ${e.message}\r\n`);
+        }
+      });
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      document.body.removeChild(fileInput);
+    } else if (title.startsWith('__DOWNLOAD__:')) {
+      window.location.href = '/download';
     }
   });
 
@@ -90,3 +117,5 @@ function initTerminal(password) {
     }
   });
 }
+
+initTerminal();

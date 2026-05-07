@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Only sync if it's a git repo
-if [ ! -d "/workspace/project/.git" ]; then
+if [ ! -d "$HOME/.git" ]; then
   echo "Not a git repository, skipping sync."
   exit 0
 fi
 
-cd /workspace/project || exit 1
+cd "$HOME" || exit 1
 
 # Configure git if not already
 git config --global user.name "${GIT_USER_NAME:-Claude Code Terminal}"
