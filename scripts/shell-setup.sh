@@ -9,8 +9,13 @@ save() {
   bash /app/scripts/git-sync.sh
 }
 
-# Always start in the workspace project directory
-cd /workspace/project
+export PS1="➜ "
+
+alias @='echo -ne "\033]0;__UPLOAD__:'"$(pwd)"':'"$RANDOM"'\007"'
+alias download='echo -ne "\033]0;__DOWNLOAD__:'"$RANDOM"'\007"'
+
+# Always start in the home directory
+cd ~
 EOF
 
 # Also add it to /etc/bash.bashrc as a fallback
@@ -22,6 +27,11 @@ save() {
   bash /app/scripts/git-sync.sh
 }
 
-# Always start in the workspace project directory
-cd /workspace/project
+export PS1="➜ "
+
+alias @='echo -ne "\033]0;__UPLOAD__:'"$(pwd)"':'"$RANDOM"'\007"'
+alias download='echo -ne "\033]0;__DOWNLOAD__:'"$RANDOM"'\007"'
+
+# Always start in the home directory
+cd ~
 EOF

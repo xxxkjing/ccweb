@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/vendor/xterm.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
   <style>
     body, html {
       margin: 0;
@@ -26,33 +26,9 @@
       width: 100%;
       height: 100%;
     }
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: monospace;
-      z-index: 10;
-    }
-    #password-input {
-      margin-top: 10px;
-      padding: 5px;
-      font-family: monospace;
-    }
   </style>
 </head>
 <body>
-  <div id="overlay">
-    <div>Enter Terminal Password:</div>
-    <input type="password" id="password-input" autofocus />
-  </div>
   <div id="terminal-wrapper">
     <div id="terminal-container"></div>
   </div>

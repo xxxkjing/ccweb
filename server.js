@@ -1,12 +1,14 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
+import fastifyMultipart from '@fastify/multipart';
 import { spawn } from 'node-pty';
 import cron from 'node-cron';
-import { exec } from 'child_process';
+import { exec, spawn as cpSpawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { pipeline } from 'stream/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +19,8 @@ app.register(fastifyStatic, {
   root: path.join(__dirname, 'public'),
 });
 
-app.register(fastifyWebsocket);
+app.register(fastifyMultipart);
+app.register(fastifyWebsocket, { options: { perMessageDeflate: false } });
 
 const PASSWORD = process.env.TERMINAL_PASSWORD || 'password';
 let activeConnection = null;
@@ -37,15 +40,37 @@ const syncWorkspace = () => {
 // Auto-sync every 5 minutes
 cron.schedule('*/5 * * * *', syncWorkspace);
 
+app.post('/upload', async (req, reply) => {
+  const cwd = req.query.cwd || process.env.HOME || '/root';
+  const parts = req.parts();
+  for await (const part of parts) {
+    if (part.file) {
+      const dest = fs.createWriteStream(path.join(cwd, part.filename));
+      await pipeline(part.file, dest);
+    }
+  }
+  return { success: true };
+});
+
+app.get('/download', (req, reply) => {
+  const cwd = process.env.HOME || '/root';
+  const tarProcess = cpSpawn('tar', [
+    '-czf', '-', 
+    '--exclude=node_modules', 
+    '--exclude=.npm', 
+    '--exclude=.cache', 
+    '--exclude=project', 
+    '-C', cwd, 
+    '.'
+  ]);
+  
+  reply.header('Content-Type', 'application/gzip');
+  reply.header('Content-Disposition', 'attachment; filename="workspace.tar.gz"');
+  return reply.send(tarProcess.stdout);
+});
+
 app.register(async function (fastify) {
   fastify.get('/terminal', { websocket: true }, (connection, req) => {
-    const token = req.query.token;
-
-    if (token !== PASSWORD) {
-      connection.close(1008, 'Invalid password');
-      return;
-    }
-
     if (activeConnection) {
       connection.send('Another user is already connected.\r\n');
       connection.close(1008, 'Max connections reached');
@@ -53,25 +78,67 @@ app.register(async function (fastify) {
     }
 
     activeConnection = connection;
+    let authenticated = false;
+    let passwordBuffer = '';
+    let cachedResizeMsg = null;
+    let ptyProcess = null;
 
-    const ptyProcess = spawn('bash', [], {
-      name: 'xterm-256color',
-      cols: 80,
-      rows: 24,
-      cwd: '/workspace/project',
-      env: {
-        ...process.env,
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor'
-      }
-    });
-
-    ptyProcess.onData(data => {
-      connection.send(data);
-    });
+    connection.send('Password: ');
 
     connection.on('message', message => {
       const msgStr = message.toString();
+      
+      if (!authenticated) {
+        if (msgStr.startsWith('1')) {
+          cachedResizeMsg = msgStr.slice(1);
+          return;
+        }
+
+        if (msgStr.startsWith('0')) {
+          const char = msgStr.slice(1);
+          if (char === '\r') {
+            connection.send('\r\n');
+            if (passwordBuffer === PASSWORD) {
+              authenticated = true;
+              ptyProcess = spawn('bash', [], {
+                name: 'xterm-256color',
+                cols: 80,
+                rows: 24,
+                cwd: process.env.HOME || '/root',
+                env: {
+                  ...process.env,
+                  TERM: 'xterm-256color',
+                  COLORTERM: 'truecolor'
+                }
+              });
+
+              ptyProcess.onData(data => {
+                connection.send(data);
+              });
+
+              if (cachedResizeMsg) {
+                try {
+                  const msg = JSON.parse(cachedResizeMsg);
+                  ptyProcess.resize(msg.cols, msg.rows);
+                } catch (e) {
+                  // ignore
+                }
+              }
+            } else {
+              connection.send('Access Denied\r\n');
+              connection.close(1008, 'Invalid password');
+            }
+          } else if (char === '\b' || char === '\x7f') {
+            if (passwordBuffer.length > 0) {
+              passwordBuffer = passwordBuffer.slice(0, -1);
+            }
+          } else {
+            passwordBuffer += char;
+          }
+        }
+        return;
+      }
+
       if (msgStr.startsWith('0')) {
         ptyProcess.write(msgStr.slice(1));
       } else if (msgStr.startsWith('1')) {
@@ -90,7 +157,6 @@ app.register(async function (fastify) {
             ptyProcess.write(msg.data);
           }
         } catch (e) {
-          // Fallback for raw data if needed
           ptyProcess.write(msgStr);
         }
       }
@@ -98,7 +164,9 @@ app.register(async function (fastify) {
 
     connection.on('close', () => {
       activeConnection = null;
-      ptyProcess.kill();
+      if (ptyProcess) {
+        ptyProcess.kill();
+      }
       syncWorkspace();
     });
   });
@@ -106,13 +174,9 @@ app.register(async function (fastify) {
 
 const start = async () => {
   try {
-    // Ensure scripts are executable
     fs.chmodSync(path.join(__dirname, 'scripts', 'git-sync.sh'), 0o755);
     fs.chmodSync(path.join(__dirname, 'scripts', 'init-project.sh'), 0o755);
     fs.chmodSync(path.join(__dirname, 'scripts', 'shell-setup.sh'), 0o755);
-    
-    // Create workspace project directory if it doesn't exist
-    fs.mkdirSync('/workspace/project', { recursive: true });
     
     await app.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' });
     console.log(`Server listening on ${app.server.address().port}`);
