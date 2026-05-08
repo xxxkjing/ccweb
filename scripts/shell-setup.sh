@@ -9,6 +9,12 @@ save() {
   bash /app/scripts/git-sync.sh
 }
 
+# Custom sync command to trigger manual sync
+sync() {
+  echo "Triggering manual sync..."
+  bash /app/scripts/git-sync.sh
+}
+
 export PS1="➜ "
 
 alias @='echo -ne "\033]0;__UPLOAD__:'"$(pwd)"':'"$RANDOM"'\007"'
@@ -23,6 +29,12 @@ cat << 'EOF' >> /etc/bash.bashrc
 
 # Custom save command to trigger manual sync
 save() {
+  echo "Triggering manual sync..."
+  bash /app/scripts/git-sync.sh
+}
+
+# Custom sync command to trigger manual sync
+sync() {
   echo "Triggering manual sync..."
   bash /app/scripts/git-sync.sh
 }
