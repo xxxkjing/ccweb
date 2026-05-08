@@ -20,6 +20,8 @@ if ! git diff-index --quiet HEAD; then
   git commit -m "Auto-sync from terminal: $(date)"
 fi
 
+git branch -M main
+
 # Pull with rebase
 git pull --rebase origin main || true
 
