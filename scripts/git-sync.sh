@@ -23,7 +23,7 @@ fi
 git branch -M main
 
 # Pull with rebase
-git pull --rebase origin main || true
+git pull --rebase origin main || git pull origin main --no-rebase -s recursive -X ours --allow-unrelated-histories || true
 
 # Push changes
 git push origin main || true

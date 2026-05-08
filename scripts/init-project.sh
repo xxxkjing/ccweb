@@ -23,14 +23,14 @@ if [ -n "$GITHUB_REPO" ] && [ -n "$GITHUB_TOKEN" ]; then
     echo "Git repository exists. Pulling latest..."
     git remote set-url origin "https://${GITHUB_TOKEN}@${REPO_URL}" || git remote add origin "https://${GITHUB_TOKEN}@${REPO_URL}"
     git branch -M main
-    git pull --rebase origin main || true
+    git pull --rebase origin main --allow-unrelated-histories || true
   else
     echo "Initializing git repository..."
     git config --global init.defaultBranch main
     git init -b main
     git branch -M main
     git remote add origin "https://${GITHUB_TOKEN}@${REPO_URL}"
-    git pull --rebase origin main || true
+    git pull --rebase origin main --allow-unrelated-histories || true
   fi
 else
   echo "No GITHUB_REPO or GITHUB_TOKEN provided."
