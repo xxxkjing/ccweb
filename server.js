@@ -3,7 +3,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
 import { spawn } from 'node-pty';
-import cron from 'node-cron';
+import chokidar from 'chokidar';
 import { exec, spawn as cpSpawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -37,8 +37,24 @@ const syncWorkspace = () => {
   });
 };
 
-// Auto-sync every 5 minutes
-cron.schedule('*/5 * * * *', syncWorkspace);
+// Auto-sync on file changes with debounce
+let syncTimeout = null;
+const debouncedSyncWorkspace = () => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    syncWorkspace();
+  }, 10000); // 10 seconds debounce
+};
+
+const watcher = chokidar.watch(process.env.HOME || '/root', {
+  ignored: ['**/.git/**', '**/.npm/**', '**/.cache/**', '**/node_modules/**', '**/ccweb/**', '**/project/**'],
+  ignoreInitial: true
+});
+
+watcher.on('all', (event, changedPath) => {
+  console.log(`File change detected: ${event} ${changedPath}`);
+  debouncedSyncWorkspace();
+});
 
 app.post('/upload', async (req, reply) => {
   const cwd = req.query.cwd || process.env.HOME || '/root';
