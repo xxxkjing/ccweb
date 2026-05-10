@@ -45,4 +45,7 @@ fi
 # Set up the shell (aliases, save command, cd into ~)
 bash /app/scripts/shell-setup.sh
 
+# Start the background sync daemon
+bash /app/scripts/sync-daemon.sh &
+
 echo "Project initialization complete."

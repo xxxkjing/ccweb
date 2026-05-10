@@ -3,7 +3,6 @@ import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
 import { spawn } from 'node-pty';
-import chokidar from 'chokidar';
 import { exec, spawn as cpSpawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,25 +35,6 @@ const syncWorkspace = () => {
     console.log(`Git sync stdout: ${stdout}`);
   });
 };
-
-// Auto-sync on file changes with debounce
-let syncTimeout = null;
-const debouncedSyncWorkspace = () => {
-  if (syncTimeout) clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(() => {
-    syncWorkspace();
-  }, 10000); // 10 seconds debounce
-};
-
-const watcher = chokidar.watch(process.env.HOME || '/root', {
-  ignored: ['**/.git/**', '**/.npm/**', '**/.cache/**', '**/node_modules/**', '**/ccweb/**', '**/project/**'],
-  ignoreInitial: true
-});
-
-watcher.on('all', (event, changedPath) => {
-  console.log(`File change detected: ${event} ${changedPath}`);
-  debouncedSyncWorkspace();
-});
 
 app.post('/upload', async (req, reply) => {
   const cwd = req.query.cwd || process.env.HOME || '/root';
@@ -193,6 +173,7 @@ const start = async () => {
     fs.chmodSync(path.join(__dirname, 'scripts', 'git-sync.sh'), 0o755);
     fs.chmodSync(path.join(__dirname, 'scripts', 'init-project.sh'), 0o755);
     fs.chmodSync(path.join(__dirname, 'scripts', 'shell-setup.sh'), 0o755);
+    fs.chmodSync(path.join(__dirname, 'scripts', 'sync-daemon.sh'), 0o755);
     
     await app.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' });
     console.log(`Server listening on ${app.server.address().port}`);
