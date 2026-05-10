@@ -25,5 +25,8 @@ COPY . .
 # Make scripts executable
 RUN chmod +x scripts/*.sh
 
-# Run init project script and start server
-CMD ["sh", "-c", "./scripts/init-project.sh && node server.js"]
+# Build the frontend and compiled server entrypoint used by npm run server
+RUN npm run build
+
+# Run init project script and start the compiled server
+CMD ["sh", "-c", "./scripts/init-project.sh && npm run server"]
