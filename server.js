@@ -22,9 +22,10 @@ app.register(fastifyMultipart);
 app.register(fastifyWebsocket, { options: { perMessageDeflate: false } });
 
 const PASSWORD = process.env.TERMINAL_PASSWORD || 'password';
-let activeConnection = null;
-let globalPtyProcess = null;
-let ptyHistory = [];
+const ptySessions = {
+  bash: { process: null, history: [], connection: null },
+  claude: { process: null, history: [], connection: null }
+};
 
 const syncWorkspace = () => {
   console.log('Running git sync...');
@@ -67,15 +68,30 @@ app.get('/download', (req, reply) => {
   return reply.send(tarProcess.stdout);
 });
 
+app.get('/t', (req, reply) => {
+  return reply.sendFile('index.html');
+});
+
+app.get('/ui', (req, reply) => {
+  return reply.sendFile('index.html');
+});
+
+app.get('/', (req, reply) => {
+  return reply.redirect('/t');
+});
+
 app.register(async function (fastify) {
   fastify.get('/terminal', { websocket: true }, (connection, req) => {
-    if (activeConnection) {
+    const type = req.query.type === 'claude' ? 'claude' : 'bash';
+    const session = ptySessions[type];
+
+    if (session.connection) {
       connection.send('Another user is already connected.\r\n');
       connection.close(1008, 'Max connections reached');
       return;
     }
 
-    activeConnection = connection;
+    session.connection = connection;
     let authenticated = false;
     let passwordBuffer = '';
     let cachedResizeMsg = null;
@@ -98,10 +114,11 @@ app.register(async function (fastify) {
             if (passwordBuffer === PASSWORD) {
               authenticated = true;
               connection.authenticated = true;
-              activeConnection = connection;
 
-              if (!globalPtyProcess) {
-                globalPtyProcess = spawn('bash', [], {
+              if (!session.process) {
+                const command = type === 'claude' ? 'npx' : 'bash';
+                const args = type === 'claude' ? ['claude'] : [];
+                session.process = spawn(command, args, {
                   name: 'xterm-256color',
                   cols: 80,
                   rows: 24,
@@ -113,17 +130,25 @@ app.register(async function (fastify) {
                   }
                 });
 
-                globalPtyProcess.onData(data => {
-                  ptyHistory.push(data);
-                  if (ptyHistory.length > 5000) {
-                    ptyHistory.shift();
+                session.process.onData(data => {
+                  session.history.push(data);
+                  if (session.history.length > 5000) {
+                    session.history.shift();
                   }
-                  if (activeConnection) {
-                    activeConnection.send(data);
+                  if (session.connection) {
+                    session.connection.send(data);
+                  }
+                });
+
+                session.process.onExit(() => {
+                  session.process = null;
+                  session.history = [];
+                  if (session.connection) {
+                    session.connection.close();
                   }
                 });
               } else {
-                for (const chunk of ptyHistory) {
+                for (const chunk of session.history) {
                   connection.send(chunk);
                 }
               }
@@ -131,7 +156,7 @@ app.register(async function (fastify) {
               if (cachedResizeMsg) {
                 try {
                   const msg = JSON.parse(cachedResizeMsg);
-                  globalPtyProcess.resize(msg.cols, msg.rows);
+                  session.process.resize(msg.cols, msg.rows);
                 } catch (e) {
                   // ignore
                 }
@@ -152,11 +177,11 @@ app.register(async function (fastify) {
       }
 
       if (msgStr.startsWith('0')) {
-        globalPtyProcess.write(msgStr.slice(1));
+        session.process?.write(msgStr.slice(1));
       } else if (msgStr.startsWith('1')) {
         try {
           const msg = JSON.parse(msgStr.slice(1));
-          globalPtyProcess.resize(msg.cols, msg.rows);
+          session.process?.resize(msg.cols, msg.rows);
         } catch (e) {
           console.error('Failed to parse resize message', e);
         }
@@ -164,18 +189,18 @@ app.register(async function (fastify) {
         try {
           const msg = JSON.parse(msgStr);
           if (msg.type === 'resize') {
-            globalPtyProcess.resize(msg.cols, msg.rows);
+            session.process?.resize(msg.cols, msg.rows);
           } else if (msg.type === 'data') {
-            globalPtyProcess.write(msg.data);
+            session.process?.write(msg.data);
           }
         } catch (e) {
-          globalPtyProcess.write(msgStr);
+          session.process?.write(msgStr);
         }
       }
     });
 
     connection.on('close', () => {
-      activeConnection = null;
+      session.connection = null;
       syncWorkspace();
     });
   });

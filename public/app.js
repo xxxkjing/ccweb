@@ -1,9 +1,17 @@
 const terminalContainer = document.getElementById('terminal-container');
+const pathname = window.location.pathname;
+
+// Update nav active state
+if (pathname === '/ui') {
+  document.getElementById('nav-ui').classList.add('active');
+} else {
+  document.getElementById('nav-t').classList.add('active');
+}
 
 function initTerminal() {
   const term = new Terminal({
     cursorBlink: true,
-    fontFamily: '"Source Code Pro", "Fira Code", "JetBrains Mono", Consolas, "Courier New", monospace',
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     fontSize: 14,
     theme: {
       background: '#1e1e1e',
@@ -31,6 +39,13 @@ function initTerminal() {
   const fitAddon = new FitAddon.FitAddon();
   term.loadAddon(fitAddon);
 
+  try {
+    const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+    term.loadAddon(webLinksAddon);
+  } catch (e) {
+    console.warn('WebLinks addon could not be loaded', e);
+  }
+
   term.open(terminalContainer);
   fitAddon.fit();
 
@@ -42,7 +57,8 @@ function initTerminal() {
   }
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/terminal`;
+  const typeParam = pathname === '/ui' ? 'claude' : 'bash';
+  const wsUrl = `${protocol}//${location.host}/terminal?type=${typeParam}`;
   
   const ws = new WebSocket(wsUrl);
 
