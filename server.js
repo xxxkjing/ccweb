@@ -23,6 +23,8 @@ app.register(fastifyWebsocket, { options: { perMessageDeflate: false } });
 
 const PASSWORD = process.env.TERMINAL_PASSWORD || 'password';
 let activeConnection = null;
+let globalPtyProcess = null;
+let ptyHistory = [];
 
 const syncWorkspace = () => {
   console.log('Running git sync...');
@@ -77,7 +79,6 @@ app.register(async function (fastify) {
     let authenticated = false;
     let passwordBuffer = '';
     let cachedResizeMsg = null;
-    let ptyProcess = null;
 
     connection.send('Password: ');
 
@@ -96,26 +97,41 @@ app.register(async function (fastify) {
             connection.send('\r\n');
             if (passwordBuffer === PASSWORD) {
               authenticated = true;
-              ptyProcess = spawn('bash', [], {
-                name: 'xterm-256color',
-                cols: 80,
-                rows: 24,
-                cwd: process.env.HOME || '/root',
-                env: {
-                  ...process.env,
-                  TERM: 'xterm-256color',
-                  COLORTERM: 'truecolor'
-                }
-              });
+              connection.authenticated = true;
+              activeConnection = connection;
 
-              ptyProcess.onData(data => {
-                connection.send(data);
-              });
+              if (!globalPtyProcess) {
+                globalPtyProcess = spawn('bash', [], {
+                  name: 'xterm-256color',
+                  cols: 80,
+                  rows: 24,
+                  cwd: process.env.HOME || '/root',
+                  env: {
+                    ...process.env,
+                    TERM: 'xterm-256color',
+                    COLORTERM: 'truecolor'
+                  }
+                });
+
+                globalPtyProcess.onData(data => {
+                  ptyHistory.push(data);
+                  if (ptyHistory.length > 5000) {
+                    ptyHistory.shift();
+                  }
+                  if (activeConnection) {
+                    activeConnection.send(data);
+                  }
+                });
+              } else {
+                for (const chunk of ptyHistory) {
+                  connection.send(chunk);
+                }
+              }
 
               if (cachedResizeMsg) {
                 try {
                   const msg = JSON.parse(cachedResizeMsg);
-                  ptyProcess.resize(msg.cols, msg.rows);
+                  globalPtyProcess.resize(msg.cols, msg.rows);
                 } catch (e) {
                   // ignore
                 }
@@ -136,11 +152,11 @@ app.register(async function (fastify) {
       }
 
       if (msgStr.startsWith('0')) {
-        ptyProcess.write(msgStr.slice(1));
+        globalPtyProcess.write(msgStr.slice(1));
       } else if (msgStr.startsWith('1')) {
         try {
           const msg = JSON.parse(msgStr.slice(1));
-          ptyProcess.resize(msg.cols, msg.rows);
+          globalPtyProcess.resize(msg.cols, msg.rows);
         } catch (e) {
           console.error('Failed to parse resize message', e);
         }
@@ -148,21 +164,18 @@ app.register(async function (fastify) {
         try {
           const msg = JSON.parse(msgStr);
           if (msg.type === 'resize') {
-            ptyProcess.resize(msg.cols, msg.rows);
+            globalPtyProcess.resize(msg.cols, msg.rows);
           } else if (msg.type === 'data') {
-            ptyProcess.write(msg.data);
+            globalPtyProcess.write(msg.data);
           }
         } catch (e) {
-          ptyProcess.write(msgStr);
+          globalPtyProcess.write(msgStr);
         }
       }
     });
 
     connection.on('close', () => {
       activeConnection = null;
-      if (ptyProcess) {
-        ptyProcess.kill();
-      }
       syncWorkspace();
     });
   });
