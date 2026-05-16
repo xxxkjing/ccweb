@@ -1,1 +1,1 @@
-# cntjhpm5
+# Claude Code Terminal Web Version
