@@ -67,6 +67,28 @@ app.get('/download', (req, reply) => {
   return reply.send(tarProcess.stdout);
 });
 
+// 路由：根据设备类型重定向
+app.get('/', async (req, reply) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+  
+  if (isMobile) {
+    return reply.redirect('/ui');
+  } else {
+    return reply.sendFile('index.html');
+  }
+});
+
+// UI 路由（移动端用）
+app.get('/ui', async (req, reply) => {
+  return reply.sendFile('ui.html');
+});
+
+// Terminal 路由（桌面端用）
+app.get('/terminal-page', async (req, reply) => {
+  return reply.sendFile('index.html');
+});
+
 app.register(async function (fastify) {
   fastify.get('/terminal', { websocket: true }, (connection, req) => {
     if (activeConnection) {
@@ -118,9 +140,14 @@ app.register(async function (fastify) {
                   if (ptyHistory.length > 5000) {
                     ptyHistory.shift();
                   }
-                  if (activeConnection) {
+                  if (activeConnection && activeConnection.readyState === 1) {
                     activeConnection.send(data);
                   }
+                });
+
+                globalPtyProcess.onExit(() => {
+                  console.log('PTY process exited');
+                  globalPtyProcess = null;
                 });
               } else {
                 for (const chunk of ptyHistory) {
@@ -131,9 +158,11 @@ app.register(async function (fastify) {
               if (cachedResizeMsg) {
                 try {
                   const msg = JSON.parse(cachedResizeMsg);
-                  globalPtyProcess.resize(msg.cols, msg.rows);
+                  if (msg.cols && msg.rows) {
+                    globalPtyProcess.resize(msg.cols, msg.rows);
+                  }
                 } catch (e) {
-                  // ignore
+                  console.error('Failed to parse cached resize message:', e);
                 }
               }
             } else {
@@ -152,31 +181,51 @@ app.register(async function (fastify) {
       }
 
       if (msgStr.startsWith('0')) {
-        globalPtyProcess.write(msgStr.slice(1));
+        const data = msgStr.slice(1);
+        if (globalPtyProcess) {
+          globalPtyProcess.write(data);
+        }
       } else if (msgStr.startsWith('1')) {
         try {
           const msg = JSON.parse(msgStr.slice(1));
-          globalPtyProcess.resize(msg.cols, msg.rows);
+          if (globalPtyProcess && msg.cols && msg.rows) {
+            globalPtyProcess.resize(msg.cols, msg.rows);
+          }
         } catch (e) {
           console.error('Failed to parse resize message', e);
         }
       } else {
         try {
           const msg = JSON.parse(msgStr);
-          if (msg.type === 'resize') {
-            globalPtyProcess.resize(msg.cols, msg.rows);
+          if (msg.type === 'resize' && msg.cols && msg.rows) {
+            if (globalPtyProcess) {
+              globalPtyProcess.resize(msg.cols, msg.rows);
+            }
           } else if (msg.type === 'data') {
-            globalPtyProcess.write(msg.data);
+            if (globalPtyProcess) {
+              globalPtyProcess.write(msg.data);
+            }
           }
         } catch (e) {
-          globalPtyProcess.write(msgStr);
+          if (globalPtyProcess) {
+            globalPtyProcess.write(msgStr);
+          }
         }
       }
     });
 
     connection.on('close', () => {
-      activeConnection = null;
+      if (activeConnection === connection) {
+        activeConnection = null;
+      }
       syncWorkspace();
+    });
+
+    connection.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      if (activeConnection === connection) {
+        activeConnection = null;
+      }
     });
   });
 });
