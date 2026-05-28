@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .options {
+      display: flex;
+      gap: 15px;
+      flex-direction: column;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 2px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8e8;
+      border-color: #d0d0d0;
+    }
+
+    .icon {
+      font-size: 20px;
+    }
+
+    .info-box {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .info-box h3 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .info-box p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Claude Code Terminal</h1>
+    <p>Welcome to Claude Code! This is the mobile-friendly UI.</p>
+    
+    <div class="info-box">
+      <h3>ℹ️ Note</h3>
+      <p>This is a mobile-optimized interface. For a full terminal experience, please use a desktop browser or click the Terminal button below.</p>
+    </div>
+
+    <div class="options">
+      <button class="btn btn-primary" onclick="goToTerminal()">
+        <span class="icon">💻</span>
+        <span>Go to Terminal</span>
+      </button>
+      <button class="btn btn-secondary" onclick="showInfo()">
+        <span class="icon">ℹ️</span>
+        <span>Learn More</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function goToTerminal() {
+      window.location.href = '/terminal-page';
+    }
+
+    function showInfo() {
+      alert('Claude Code Terminal UI\n\nThis is a mobile-friendly interface for the Claude Code Terminal.\n\nFor the best experience with terminal access, please use a desktop browser or the Terminal button to switch to full terminal mode.');
+    }
+  </script>
+</body>
+</html>
