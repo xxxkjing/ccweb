@@ -36,7 +36,7 @@ export function createWebSocketServer(
     const url = incomingRequest.url ?? '/';
     const pathname = new URL(url, 'http://localhost').pathname;
 
-    if (pathname === '/terminal') {
+    if (pathname === '/terminal' || pathname === '/t/terminal') {
       handleLegacyTerminalConnection(ws, incomingRequest);
       return;
     }

@@ -150,7 +150,7 @@ app.get('/', (req, res) => {
 
 // Legacy Terminal Upload/Download
 const legacyUpload = multer({ dest: os.tmpdir() });
-app.post('/upload', legacyUpload.any(), async (req, res) => {
+const handleLegacyUpload = async (req, res) => {
     try {
         const cwd = req.query.cwd || process.env.HOME || '/root';
         if (!fs.existsSync(cwd)) {
@@ -166,9 +166,11 @@ app.post('/upload', legacyUpload.any(), async (req, res) => {
         console.error('Upload error:', e);
         res.status(500).json({ success: false, error: e.message });
     }
-});
+};
+app.post('/upload', legacyUpload.any(), handleLegacyUpload);
+app.post('/t/upload', legacyUpload.any(), handleLegacyUpload);
 
-app.get('/download', (req, res) => {
+const handleLegacyDownload = (req, res) => {
     const cwd = process.env.HOME || '/root';
     const tarProcess = spawn('tar', [
         '-czf', '-', 
@@ -183,7 +185,9 @@ app.get('/download', (req, res) => {
     res.setHeader('Content-Type', 'application/gzip');
     res.setHeader('Content-Disposition', 'attachment; filename="workspace.tar.gz"');
     tarProcess.stdout.pipe(res);
-});
+};
+app.get('/download', handleLegacyDownload);
+app.get('/t/download', handleLegacyDownload);
 
 
 
