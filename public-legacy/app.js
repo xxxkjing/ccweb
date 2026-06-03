@@ -1,13 +1,4 @@
 const terminalContainer = document.getElementById('terminal-container');
-const pathname = window.location.pathname;
-
-// Update nav active state
-if (pathname === '/ui') {
-  document.getElementById('nav-ui').classList.add('active');
-} else {
-  document.getElementById('nav-t').classList.add('active');
-}
-
 function initTerminal() {
   const term = new Terminal({
     cursorBlink: true,
@@ -57,8 +48,7 @@ function initTerminal() {
   }
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const typeParam = pathname === '/ui' ? 'claude' : 'bash';
-  const wsUrl = `${protocol}//${location.host}/t/terminal?type=${typeParam}`;
+  const wsUrl = `${protocol}//${location.host}/t/terminal?type=bash`;
   
   const ws = new WebSocket(wsUrl);
 

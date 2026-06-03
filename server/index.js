@@ -245,21 +245,10 @@ app.use('/api/agent', agentRoutes);
 // Serve public files (like api-docs.html)
 app.use(express.static(path.join(APP_ROOT, 'public')));
 
-// Static files served after API routes
-// Add cache control: HTML files should not be cached, but assets can be cached
-app.use('/ui', express.static(path.join(APP_ROOT, 'dist'), {
-    setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.html')) {
-            // Prevent HTML caching to avoid service worker issues after builds
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-        } else if (filePath.match(/\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|ico)$/)) {
-            // Cache static assets for 1 year (they have hashed names)
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-    }
-}));
+// GUI is disabled; keep the legacy terminal as the only UI.
+app.use('/ui', (req, res) => {
+    res.redirect('/t');
+});
 
 // API Routes (protected)
 // /api/config endpoint removed - no longer needed
@@ -1355,29 +1344,9 @@ app.get('/api/projects/:projectId/sessions/:sessionId/token-usage', authenticate
     }
 });
 
-// Serve React app for all other routes (excluding static files)
+// Redirect any GUI route back to the terminal.
 app.get('/ui*', (req, res) => {
-    // Skip requests for static assets (files with extensions)
-    if (path.extname(req.path)) {
-        return res.status(404).send('Not found');
-    }
-
-    // Only serve index.html for HTML routes, not for static assets
-    // Static assets should already be handled by express.static middleware above
-    const indexPath = path.join(APP_ROOT, 'dist', 'index.html');
-
-    // Check if dist/index.html exists (production build available)
-    if (fs.existsSync(indexPath)) {
-        // Set no-cache headers for HTML to prevent service worker issues
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.sendFile(indexPath);
-    } else {
-        // In development, redirect to Vite dev server only if dist doesn't exist
-        const redirectHost = getConnectableHost(req.hostname);
-        res.redirect(`${req.protocol}://${redirectHost}:${VITE_PORT}/ui`);
-    }
+    res.redirect('/t');
 });
 
 // global error middleware must be last

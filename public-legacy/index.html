@@ -10,11 +10,6 @@
   <style>
     :root {
       --background: #1e1e1e;
-      --nav-bg: rgba(255, 255, 255, 0.05);
-      --nav-border: rgba(255, 255, 255, 0.1);
-      --nav-text: #a1a1aa;
-      --nav-text-active: #ffffff;
-      --nav-bg-active: rgba(255, 255, 255, 0.1);
     }
     body, html {
       margin: 0;
@@ -25,42 +20,8 @@
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    .nav-wrapper {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-      background: var(--nav-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--nav-border);
-      border-radius: 8px;
-      padding: 4px;
-      display: flex;
-      gap: 4px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-    .nav-btn {
-      text-decoration: none;
-      color: var(--nav-text);
-      padding: 6px 16px;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-    .nav-btn:hover {
-      color: var(--nav-text-active);
-      background: rgba(255, 255, 255, 0.05);
-    }
-    .nav-btn.active {
-      background: var(--nav-bg-active);
-      color: var(--nav-text-active);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
     #terminal-wrapper {
-      padding: 60px 10px 10px 10px;
+      padding: 10px;
       height: 100%;
       width: 100%;
       box-sizing: border-box;
@@ -79,11 +40,6 @@
   </style>
 </head>
 <body>
-  <div class="nav-wrapper" id="nav-wrapper">
-    <a href="/t" class="nav-btn" id="nav-t">Bash</a>
-    <a href="/ui" class="nav-btn" id="nav-ui">Claude</a>
-  </div>
-
   <div id="terminal-wrapper">
     <div id="terminal-container"></div>
   </div>
