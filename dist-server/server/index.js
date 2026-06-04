@@ -100,12 +100,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Legacy Terminal Routes
-app.use('/t', express.static(path.join(APP_ROOT, 'public-legacy')));
-app.get('/t', (req, res) => {
+app.use(express.static(path.join(APP_ROOT, 'public-legacy')));
+app.get('/', (req, res) => {
     res.sendFile(path.join(APP_ROOT, 'public-legacy', 'index.html'));
 });
-app.get('/', (req, res) => {
-    res.redirect('/t');
+app.get(['/t', '/t/*', '/terminal-page', '/t/terminal-page'], (req, res) => {
+    res.redirect('/');
 });
 // Legacy Terminal Upload/Download
 const legacyUpload = multer({ dest: os.tmpdir() });
@@ -128,7 +128,6 @@ const handleLegacyUpload = async (req, res) => {
     }
 };
 app.post('/upload', legacyUpload.any(), handleLegacyUpload);
-app.post('/t/upload', legacyUpload.any(), handleLegacyUpload);
 const handleLegacyDownload = (req, res) => {
     const cwd = process.env.HOME || '/root';
     const tarProcess = spawn('tar', [
@@ -145,7 +144,6 @@ const handleLegacyDownload = (req, res) => {
     tarProcess.stdout.pipe(res);
 };
 app.get('/download', handleLegacyDownload);
-app.get('/t/download', handleLegacyDownload);
 // Public health check endpoint (no authentication required)
 app.get('/health', (req, res) => {
     res.json({
@@ -186,7 +184,7 @@ app.use('/api/agent', agentRoutes);
 app.use(express.static(path.join(APP_ROOT, 'public')));
 // GUI is disabled; keep the legacy terminal as the only UI.
 app.use('/ui', (req, res) => {
-    res.redirect('/t');
+    res.redirect('/');
 });
 // API Routes (protected)
 // /api/config endpoint removed - no longer needed
@@ -1198,7 +1196,7 @@ app.get('/api/projects/:projectId/sessions/:sessionId/token-usage', authenticate
 });
 // Redirect any GUI route back to the terminal.
 app.get('/ui*', (req, res) => {
-    res.redirect('/t');
+    res.redirect('/');
 });
 // global error middleware must be last
 app.use((err, req, res, next) => {

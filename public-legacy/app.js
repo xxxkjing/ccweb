@@ -48,7 +48,7 @@ function initTerminal() {
   }
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/t/terminal?type=bash`;
+  const wsUrl = `${protocol}//${location.host}/terminal?type=bash`;
   
   const ws = new WebSocket(wsUrl);
 
@@ -95,7 +95,7 @@ function initTerminal() {
 
         try {
           term.write(`\r\nUploading ${fileInput.files.length} file(s) to ${uploadPath}...\r\n`);
-          const res = await fetch(`/t/upload?cwd=${encodeURIComponent(uploadPath)}`, {
+          const res = await fetch(`/upload?cwd=${encodeURIComponent(uploadPath)}`, {
             method: 'POST',
             body: formData
           });
@@ -112,7 +112,7 @@ function initTerminal() {
       fileInput.click();
       document.body.removeChild(fileInput);
     } else if (title.startsWith('__DOWNLOAD__:')) {
-      window.location.href = '/t/download';
+      window.location.href = '/download';
     }
   });
 
