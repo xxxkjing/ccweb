@@ -48,7 +48,10 @@ function initTerminal() {
   }
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/terminal?type=bash`;
+  const token = localStorage.getItem('auth-token');
+  const wsUrl = token 
+    ? `${protocol}//${location.host}/shell?token=${encodeURIComponent(token)}`
+    : `${protocol}//${location.host}/terminal?type=bash`;
   
   const ws = new WebSocket(wsUrl);
 
